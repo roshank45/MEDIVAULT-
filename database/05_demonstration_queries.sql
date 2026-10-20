@@ -1,0 +1,138 @@
+-- ============================================================================
+-- MediVault: Centralized Patient Medical Records and Medication Safety System
+-- File: 05_demonstration_queries.sql
+-- Description: Essential Demonstration SQL Queries for Academic DBMS Evaluation
+-- ============================================================================
+
+-- Query 1: Patient Longitudinal Medical History Across Multiple Hospitals
+-- Demonstrates multi-hospital aggregation for patient 'Harold Finch'
+SELECT 
+    v.VISIT_ID,
+    TO_CHAR(v.VISIT_DATE, 'YYYY-MM-DD HH24:MI') AS VISIT_TIME,
+    h.NAME AS HOSPITAL_NAME,
+    h.CODE AS HOSPITAL_CODE,
+    doc.FULL_NAME AS ATTENDING_DOCTOR,
+    doc.SPECIALTY,
+    v.VISIT_TYPE,
+    v.CHIEF_COMPLAINT,
+    d.ICD10_CODE,
+    d.NAME AS DIAGNOSIS_NAME,
+    vd.DIAGNOSIS_TYPE
+FROM VISIT v
+JOIN HOSPITAL h ON v.HOSPITAL_ID = h.HOSPITAL_ID
+JOIN APP_USER doc ON v.DOCTOR_ID = doc.USER_ID
+JOIN PATIENT p ON v.PATIENT_ID = p.PATIENT_ID
+LEFT JOIN VISIT_DIAGNOSIS vd ON v.VISIT_ID = vd.VISIT_ID
+LEFT JOIN DIAGNOSIS d ON vd.DIAGNOSIS_ID = d.DIAGNOSIS_ID
+WHERE p.UNIQUE_PATIENT_ID = 'MV-2026-000001'
+ORDER BY v.VISIT_DATE DESC;
+
+-- Query 2: Current Active Medication Records (Using View)
+SELECT 
+    PATIENT_NAME,
+    BRAND_NAME,
+    GENERIC_NAME,
+    DOSAGE,
+    FREQUENCY,
+    ROUTE,
+    START_DATE,
+    END_DATE,
+    PRESCRIBING_DOCTOR,
+    HOSPITAL_NAME
+FROM VW_ACTIVE_PATIENT_MEDICATIONS
+WHERE UNIQUE_PATIENT_ID = 'MV-2026-000001';
+
+-- Query 3: Patients with Documented Allergies & Severity Ratings
+SELECT 
+    p.UNIQUE_PATIENT_ID,
+    p.FIRST_NAME || ' ' || p.LAST_NAME AS PATIENT_NAME,
+    p.BLOOD_GROUP,
+    a.ALLERGEN_NAME,
+    a.ALLERGEN_TYPE,
+    a.REACTION,
+    a.SEVERITY,
+    a.STATUS,
+    TO_CHAR(a.RECORDED_AT, 'YYYY-MM-DD') AS DOCUMENTED_ON,
+    doc.FULL_NAME AS DOCUMENTED_BY
+FROM PATIENT p
+JOIN ALLERGY a ON p.PATIENT_ID = a.PATIENT_ID
+JOIN APP_USER doc ON a.RECORDED_BY = doc.USER_ID
+WHERE a.STATUS = 'ACTIVE'
+ORDER BY a.SEVERITY DESC;
+
+-- Query 4: Vital Measurements Over Time (Longitudinal Vital Signs Trend)
+SELECT 
+    p.UNIQUE_PATIENT_ID,
+    vr.MEASUREMENT_TYPE,
+    vr.NUMERIC_VALUE,
+    vr.UNIT,
+    vr.CONTEXT_NOTE,
+    TO_CHAR(vr.RECORDED_AT, 'YYYY-MM-DD HH24:MI') AS RECORDED_TIMESTAMP,
+    h.NAME AS RECORDED_AT_HOSPITAL
+FROM VITAL_RECORD vr
+JOIN PATIENT p ON vr.PATIENT_ID = p.PATIENT_ID
+LEFT JOIN VISIT v ON vr.VISIT_ID = v.VISIT_ID
+LEFT JOIN HOSPITAL h ON v.HOSPITAL_ID = h.HOSPITAL_ID
+WHERE p.UNIQUE_PATIENT_ID = 'MV-2026-000001'
+ORDER BY vr.RECORDED_AT ASC, vr.MEASUREMENT_TYPE;
+
+-- Query 5: Consultations Grouped by Hospital and Department
+SELECT 
+    h.NAME AS HOSPITAL_NAME,
+    v.VISIT_TYPE,
+    COUNT(v.VISIT_ID) AS CONSULTATION_COUNT,
+    MIN(v.VISIT_DATE) AS EARLIEST_VISIT,
+    MAX(v.VISIT_DATE) AS LATEST_VISIT
+FROM HOSPITAL h
+JOIN VISIT v ON h.HOSPITAL_ID = v.HOSPITAL_ID
+GROUP BY h.NAME, v.VISIT_TYPE
+ORDER BY h.NAME, CONSULTATION_COUNT DESC;
+
+-- Query 6: Prescription History with Item Details and Status
+SELECT 
+    rx.PRESCRIPTION_CODE,
+    p.FIRST_NAME || ' ' || p.LAST_NAME AS PATIENT_NAME,
+    h.NAME AS PRESCRIBING_HOSPITAL,
+    doc.FULL_NAME AS DOCTOR,
+    m.GENERIC_NAME,
+    m.BRAND_NAME,
+    rxi.DOSE_AMOUNT || ' ' || rxi.DOSE_UNIT AS DOSE,
+    rxi.FREQUENCY,
+    rxi.DURATION_DAYS,
+    rxi.STATUS AS ITEM_STATUS,
+    rx.STATUS AS RX_STATUS
+FROM PRESCRIPTION rx
+JOIN PATIENT p ON rx.PATIENT_ID = p.PATIENT_ID
+JOIN HOSPITAL h ON rx.HOSPITAL_ID = h.HOSPITAL_ID
+JOIN APP_USER doc ON rx.DOCTOR_ID = doc.USER_ID
+JOIN PRESCRIPTION_ITEM rxi ON rx.PRESCRIPTION_ID = rxi.PRESCRIPTION_ID
+JOIN MEDICINE m ON rxi.MEDICINE_ID = m.MEDICINE_ID
+ORDER BY rx.CREATED_AT DESC;
+
+-- Query 7: Monthly Hospital Visit Counts (Time-series aggregations)
+SELECT 
+    TO_CHAR(v.VISIT_DATE, 'YYYY-MM') AS VISIT_MONTH,
+    h.NAME AS HOSPITAL_NAME,
+    COUNT(v.VISIT_ID) AS TOTAL_VISITS
+FROM VISIT v
+JOIN HOSPITAL h ON v.HOSPITAL_ID = h.HOSPITAL_ID
+GROUP BY TO_CHAR(v.VISIT_DATE, 'YYYY-MM'), h.NAME
+ORDER BY VISIT_MONTH DESC, TOTAL_VISITS DESC;
+
+-- Query 8: Safety Detection Query - Patients with Potentially Duplicate Active Medications
+-- Identifies patients prescribed multiple active medications having the same generic ingredient or class
+SELECT 
+    p.UNIQUE_PATIENT_ID,
+    p.FIRST_NAME || ' ' || p.LAST_NAME AS PATIENT_NAME,
+    m.GENERIC_NAME,
+    COUNT(rxi.ITEM_ID) AS ACTIVE_PRESCRIPTION_COUNT,
+    LISTAGG(m.BRAND_NAME || ' (Rx: ' || rx.PRESCRIPTION_CODE || ')', '; ') WITHIN GROUP (ORDER BY rx.CREATED_AT) AS PRESCRIBED_BRANDS
+FROM PRESCRIPTION_ITEM rxi
+JOIN PRESCRIPTION rx ON rxi.PRESCRIPTION_ID = rx.PRESCRIPTION_ID
+JOIN MEDICINE m ON rxi.MEDICINE_ID = m.MEDICINE_ID
+JOIN PATIENT p ON rx.PATIENT_ID = p.PATIENT_ID
+WHERE rxi.STATUS = 'ACTIVE' 
+  AND rx.STATUS = 'ACTIVE'
+  AND rxi.END_DATE >= TRUNC(SYSDATE)
+GROUP BY p.UNIQUE_PATIENT_ID, p.FIRST_NAME, p.LAST_NAME, m.GENERIC_NAME
+HAVING COUNT(rxi.ITEM_ID) > 1;
