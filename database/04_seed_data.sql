@@ -1,0 +1,304 @@
+-- ============================================================================
+-- MediVault: Centralized Patient Medical Records and Medication Safety System
+-- File: 04_seed_data.sql
+-- Description: Realistic Synthetic Seed Data for 3 Hospitals, Users, Patients, Vitals, Prescriptions, Interactions
+-- Note: All data is completely fictional and for academic/prototype demonstration.
+-- ============================================================================
+
+SET DEFINE OFF;
+
+-- 1. HOSPITALS (At least 3 participating institutions)
+INSERT INTO HOSPITAL (HOSPITAL_ID, NAME, CODE, ADDRESS, CITY, STATE, PHONE, EMAIL, IS_ACTIVE)
+VALUES (1, 'City General Hospital', 'CGH', '100 Metro Boulevard', 'Metro City', 'NY', '+1-555-0101', 'info@citygeneral.org', 1);
+
+INSERT INTO HOSPITAL (HOSPITAL_ID, NAME, CODE, ADDRESS, CITY, STATE, PHONE, EMAIL, IS_ACTIVE)
+VALUES (2, 'Sunrise Medical Centre', 'SMC', '450 Eastpark Avenue', 'Eastville', 'NY', '+1-555-0102', 'contact@sunrisemed.org', 1);
+
+INSERT INTO HOSPITAL (HOSPITAL_ID, NAME, CODE, ADDRESS, CITY, STATE, PHONE, EMAIL, IS_ACTIVE)
+VALUES (3, 'Green Valley Hospital', 'GVH', '820 Pinecrest Road', 'Green Valley', 'NY', '+1-555-0103', 'support@greenvalleyhosp.org', 1);
+
+-- 2. USERS (Admin, Multi-hospital Doctors, Emergency Clinician, Patient)
+-- Password for admin: Admin@123
+INSERT INTO APP_USER (USER_ID, HOSPITAL_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE, SPECIALTY, LICENSE_NUMBER, IS_ACTIVE)
+VALUES (1, 1, 'admin', '$2b$12$lh2n7i.E544C9gTDQTX1le8Ym0UdNCEFo8O0hcreUhXy3Tw2UkB6C', 'Eleanor Vance', 'admin@medivault.org', '+1-555-1000', 'ADMIN', 'System Administration', 'ADM-9901', 1);
+
+-- Password for dr.chen: Doctor@123 (Hospital 1 - CGH)
+INSERT INTO APP_USER (USER_ID, HOSPITAL_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE, SPECIALTY, LICENSE_NUMBER, IS_ACTIVE)
+VALUES (2, 1, 'dr.chen', '$2b$12$OoaS6IiTnbqA/V/H.pVDae5P/x4B4/O/uRvk3D4k.fCqEMUEi61Ca', 'Dr. Marcus Chen', 'marcus.chen@citygeneral.org', '+1-555-2001', 'DOCTOR', 'Cardiology & Internal Medicine', 'MD-NY-4482', 1);
+
+-- Password for dr.patel: Doctor@123 (Hospital 2 - SMC)
+INSERT INTO APP_USER (USER_ID, HOSPITAL_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE, SPECIALTY, LICENSE_NUMBER, IS_ACTIVE)
+VALUES (3, 2, 'dr.patel', '$2b$12$OoaS6IiTnbqA/V/H.pVDae5P/x4B4/O/uRvk3D4k.fCqEMUEi61Ca', 'Dr. Priya Patel', 'priya.patel@sunrisemed.org', '+1-555-2002', 'DOCTOR', 'Endocrinology & Diabetology', 'MD-NY-8831', 1);
+
+-- Password for dr.rodriguez: Doctor@123 (Hospital 3 - GVH)
+INSERT INTO APP_USER (USER_ID, HOSPITAL_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE, SPECIALTY, LICENSE_NUMBER, IS_ACTIVE)
+VALUES (4, 3, 'dr.rodriguez', '$2b$12$OoaS6IiTnbqA/V/H.pVDae5P/x4B4/O/uRvk3D4k.fCqEMUEi61Ca', 'Dr. Mateo Rodriguez', 'm.rodriguez@greenvalleyhosp.org', '+1-555-2003', 'DOCTOR', 'Pulmonology & General Practice', 'MD-NY-1194', 1);
+
+-- Password for er.sarah: Emergency@123 (Emergency Clinician)
+INSERT INTO APP_USER (USER_ID, HOSPITAL_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE, SPECIALTY, LICENSE_NUMBER, IS_ACTIVE)
+VALUES (5, 2, 'er.sarah', '$2b$12$nV9ozicWKwvMG7eQNf9m2u867hNEBYMAN.u3yhi.VChZmUdw2W2uK', 'Dr. Sarah Connor', 's.connor@sunrisemed.org', '+1-555-9110', 'EMERGENCY_CLINICIAN', 'Emergency & Trauma Medicine', 'ER-NY-7721', 1);
+
+-- Password for patient.finch: Patient@123
+INSERT INTO APP_USER (USER_ID, HOSPITAL_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE, SPECIALTY, LICENSE_NUMBER, IS_ACTIVE)
+VALUES (6, NULL, 'patient.finch', '$2b$12$oxXVKsOvxAp4Ty9ooVC81uChD7mUzbvsVldvQTB3HSpJDsmt55GMi', 'Harold Finch', 'harold.finch@email.test', '+1-555-4401', 'PATIENT', NULL, NULL, 1);
+
+-- 3. DIAGNOSIS REFERENCE CATALOG
+INSERT INTO DIAGNOSIS (DIAGNOSIS_ID, ICD10_CODE, NAME, CATEGORY, DESCRIPTION)
+VALUES (1, 'E11.9', 'Type 2 Diabetes Mellitus without complications', 'Endocrine', 'Non-insulin-dependent diabetes mellitus without secondary clinical manifestation');
+
+INSERT INTO DIAGNOSIS (DIAGNOSIS_ID, ICD10_CODE, NAME, CATEGORY, DESCRIPTION)
+VALUES (2, 'I10', 'Essential (Primary) Hypertension', 'Cardiovascular', 'High blood pressure not having an established secondary medical cause');
+
+INSERT INTO DIAGNOSIS (DIAGNOSIS_ID, ICD10_CODE, NAME, CATEGORY, DESCRIPTION)
+VALUES (3, 'J45.909', 'Unspecified Asthma, uncomplicated', 'Respiratory', 'Chronic inflammatory disease of the airways of the lungs');
+
+INSERT INTO DIAGNOSIS (DIAGNOSIS_ID, ICD10_CODE, NAME, CATEGORY, DESCRIPTION)
+VALUES (4, 'I25.10', 'Atherosclerotic Heart Disease', 'Cardiovascular', 'Coronary artery disease of native coronary artery without angina pectoris');
+
+INSERT INTO DIAGNOSIS (DIAGNOSIS_ID, ICD10_CODE, NAME, CATEGORY, DESCRIPTION)
+VALUES (5, 'K21.9', 'Gastro-esophageal Reflux Disease (GERD)', 'Gastrointestinal', 'Digestive disease where stomach acid irritates food pipe lining');
+
+-- 4. MEDICINE REFERENCE CATALOG
+INSERT INTO MEDICINE (MEDICINE_ID, BRAND_NAME, GENERIC_NAME, DRUG_CLASS, DOSAGE_FORM, STRENGTH, ALLERGEN_GROUP)
+VALUES (1, 'Glucophage', 'Metformin Hydrochloride', 'Biguanide', 'Oral Tablet', '500 mg', NULL);
+
+INSERT INTO MEDICINE (MEDICINE_ID, BRAND_NAME, GENERIC_NAME, DRUG_CLASS, DOSAGE_FORM, STRENGTH, ALLERGEN_GROUP)
+VALUES (2, 'Prinivil', 'Lisinopril', 'ACE Inhibitor', 'Oral Tablet', '10 mg', 'ACE_INHIBITOR');
+
+INSERT INTO MEDICINE (MEDICINE_ID, BRAND_NAME, GENERIC_NAME, DRUG_CLASS, DOSAGE_FORM, STRENGTH, ALLERGEN_GROUP)
+VALUES (3, 'Amoxil', 'Amoxicillin', 'Penicillin Antibiotic', 'Oral Capsule', '500 mg', 'PENICILLIN');
+
+INSERT INTO MEDICINE (MEDICINE_ID, BRAND_NAME, GENERIC_NAME, DRUG_CLASS, DOSAGE_FORM, STRENGTH, ALLERGEN_GROUP)
+VALUES (4, 'Coumadin', 'Warfarin Sodium', 'Anticoagulant', 'Oral Tablet', '5 mg', NULL);
+
+INSERT INTO MEDICINE (MEDICINE_ID, BRAND_NAME, GENERIC_NAME, DRUG_CLASS, DOSAGE_FORM, STRENGTH, ALLERGEN_GROUP)
+VALUES (5, 'Bayer Aspirin', 'Aspirin (Acetylsalicylic Acid)', 'NSAID / Antiplatelet', 'Oral Tablet', '81 mg', 'NSAID');
+
+INSERT INTO MEDICINE (MEDICINE_ID, BRAND_NAME, GENERIC_NAME, DRUG_CLASS, DOSAGE_FORM, STRENGTH, ALLERGEN_GROUP)
+VALUES (6, 'Lipitor', 'Atorvastatin Calcium', 'HMG-CoA Reductase Inhibitor', 'Oral Tablet', '20 mg', 'STATIN');
+
+INSERT INTO MEDICINE (MEDICINE_ID, BRAND_NAME, GENERIC_NAME, DRUG_CLASS, DOSAGE_FORM, STRENGTH, ALLERGEN_GROUP)
+VALUES (7, 'Norvasc', 'Amlodipine Besylate', 'Calcium Channel Blocker', 'Oral Tablet', '5 mg', NULL);
+
+INSERT INTO MEDICINE (MEDICINE_ID, BRAND_NAME, GENERIC_NAME, DRUG_CLASS, DOSAGE_FORM, STRENGTH, ALLERGEN_GROUP)
+VALUES (8, 'Advil', 'Ibuprofen', 'NSAID', 'Oral Tablet', '400 mg', 'NSAID');
+
+INSERT INTO MEDICINE (MEDICINE_ID, BRAND_NAME, GENERIC_NAME, DRUG_CLASS, DOSAGE_FORM, STRENGTH, ALLERGEN_GROUP)
+VALUES (9, 'Augmentin', 'Amoxicillin / Clavulanate', 'Penicillin Antibiotic', 'Oral Tablet', '875 mg', 'PENICILLIN');
+
+-- 5. DRUG INTERACTIONS KNOWLEDGE BASE (Clearly labeled synthetic demonstration dataset)
+INSERT INTO DRUG_INTERACTION (INTERACTION_ID, DRUG1_NAME, DRUG2_NAME, SEVERITY, DESCRIPTION, CLINICAL_EFFECT, EVIDENCE_LEVEL, LAST_REVIEWED)
+VALUES (1, 'Warfarin Sodium', 'Aspirin (Acetylsalicylic Acid)', 'MAJOR', 
+        'Concurrent use of oral anticoagulants and aspirin significantly elevates risk of major gastrointestinal and systemic bleeding.', 
+        'Hemorrhage, prolonged prothrombin time', 'DEMO_SYNTHETIC', TO_DATE('2026-01-15', 'YYYY-MM-DD'));
+
+INSERT INTO DRUG_INTERACTION (INTERACTION_ID, DRUG1_NAME, DRUG2_NAME, SEVERITY, DESCRIPTION, CLINICAL_EFFECT, EVIDENCE_LEVEL, LAST_REVIEWED)
+VALUES (2, 'Lisinopril', 'Ibuprofen', 'MODERATE', 
+        'NSAIDs may attenuate the antihypertensive effect of ACE inhibitors and precipitate acute kidney injury, particularly in elderly or volume-depleted patients.', 
+        'Reduced blood pressure control, renal dysfunction, hyperkalemia', 'DEMO_SYNTHETIC', TO_DATE('2026-02-10', 'YYYY-MM-DD'));
+
+INSERT INTO DRUG_INTERACTION (INTERACTION_ID, DRUG1_NAME, DRUG2_NAME, SEVERITY, DESCRIPTION, CLINICAL_EFFECT, EVIDENCE_LEVEL, LAST_REVIEWED)
+VALUES (3, 'Aspirin (Acetylsalicylic Acid)', 'Ibuprofen', 'MODERATE', 
+        'Co-administration of multiple NSAIDs increases gastrointestinal ulceration risk and ibuprofen may impede aspirin cardioprotective antiplatelet effect.', 
+        'GI ulceration and bleeding', 'DEMO_SYNTHETIC', TO_DATE('2026-02-15', 'YYYY-MM-DD'));
+
+INSERT INTO DRUG_INTERACTION (INTERACTION_ID, DRUG1_NAME, DRUG2_NAME, SEVERITY, DESCRIPTION, CLINICAL_EFFECT, EVIDENCE_LEVEL, LAST_REVIEWED)
+VALUES (4, 'Atorvastatin Calcium', 'Clarithromycin', 'CONTRAINDICATED', 
+        'Potent CYP3A4 inhibition produces substantial increases in atorvastatin serum concentrations, dramatically elevating rhabdomyolysis danger.', 
+        'Rhabdomyolysis, severe myopathy, renal failure', 'DEMO_SYNTHETIC', TO_DATE('2026-03-01', 'YYYY-MM-DD'));
+
+-- 6. PATIENTS
+-- Patient 1: Harold Finch (Central demonstration persona: 68 y/o with T2D, HTN, Severe Penicillin allergy)
+INSERT INTO PATIENT (PATIENT_ID, UNIQUE_PATIENT_ID, USER_ID, FIRST_NAME, LAST_NAME, DATE_OF_BIRTH, GENDER, BLOOD_GROUP, PHONE, EMAIL, ADDRESS, EMERGENCY_CONTACT_NAME, EMERGENCY_CONTACT_PHONE, EMERGENCY_CONTACT_RELATION, ALLERGIES_RECORDED_STATUS)
+VALUES (1, 'MV-2026-000001', 6, 'Harold', 'Finch', TO_DATE('1958-03-12', 'YYYY-MM-DD'), 'MALE', 'O_POSITIVE', '+1-555-4401', 'harold.finch@email.test', '742 Evergreen Terrace, Metro City, NY', 'Grace Hendricks', '+1-555-9988', 'Spouse', 'DOCUMENTED');
+
+-- Patient 2: Elena Rostova (42 y/o with Asthma and NSAID allergy)
+INSERT INTO PATIENT (PATIENT_ID, UNIQUE_PATIENT_ID, USER_ID, FIRST_NAME, LAST_NAME, DATE_OF_BIRTH, GENDER, BLOOD_GROUP, PHONE, EMAIL, ADDRESS, EMERGENCY_CONTACT_NAME, EMERGENCY_CONTACT_PHONE, EMERGENCY_CONTACT_RELATION, ALLERGIES_RECORDED_STATUS)
+VALUES (2, 'MV-2026-000002', NULL, 'Elena', 'Rostova', TO_DATE('1984-07-25', 'YYYY-MM-DD'), 'FEMALE', 'A_POSITIVE', '+1-555-4402', 'elena.rostova@email.test', '320 Hudson Way, Eastville, NY', 'Mikhail Rostov', '+1-555-9989', 'Brother', 'DOCUMENTED');
+
+-- Patient 3: David Miller (55 y/o with No Known Allergies)
+INSERT INTO PATIENT (PATIENT_ID, UNIQUE_PATIENT_ID, USER_ID, FIRST_NAME, LAST_NAME, DATE_OF_BIRTH, GENDER, BLOOD_GROUP, PHONE, EMAIL, ADDRESS, EMERGENCY_CONTACT_NAME, EMERGENCY_CONTACT_PHONE, EMERGENCY_CONTACT_RELATION, ALLERGIES_RECORDED_STATUS)
+VALUES (3, 'MV-2026-000003', NULL, 'David', 'Miller', TO_DATE('1971-11-04', 'YYYY-MM-DD'), 'MALE', 'B_POSITIVE', '+1-555-4403', 'david.miller@email.test', '15 Riverdale Lane, Green Valley, NY', 'Sarah Miller', '+1-555-9990', 'Daughter', 'NO_KNOWN_ALLERGIES');
+
+-- 7. ALLERGIES
+INSERT INTO ALLERGY (ALLERGY_ID, PATIENT_ID, ALLERGEN_NAME, ALLERGEN_TYPE, REACTION, SEVERITY, STATUS, RECORDED_BY, RECORDED_AT)
+VALUES (1, 1, 'Penicillin', 'MEDICATION', 'Anaphylaxis, severe broncho-constriction, and generalized urticaria', 'LIFE_THREATENING', 'ACTIVE', 2, TO_TIMESTAMP('2026-01-10 10:15:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO ALLERGY (ALLERGY_ID, PATIENT_ID, ALLERGEN_NAME, ALLERGEN_TYPE, REACTION, SEVERITY, STATUS, RECORDED_BY, RECORDED_AT)
+VALUES (2, 2, 'Ibuprofen / NSAIDs', 'MEDICATION', 'Facial angioedema and wheezing', 'SEVERE', 'ACTIVE', 4, TO_TIMESTAMP('2026-02-05 14:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+-- 8. VISITS (Demonstrating Multi-Hospital Cross-Care Journey for Harold Finch)
+-- Visit 1: Harold Finch at City General Hospital (CGH) with Dr. Marcus Chen
+INSERT INTO VISIT (VISIT_ID, PATIENT_ID, DOCTOR_ID, HOSPITAL_ID, VISIT_DATE, VISIT_TYPE, CHIEF_COMPLAINT, CLINICAL_NOTES, STATUS)
+VALUES (1, 1, 2, 1, TO_TIMESTAMP('2026-01-10 09:30:00', 'YYYY-MM-DD HH24:MI:SS'), 'CONSULTATION', 
+        'Fatigue, increased thirst, and intermittent morning headaches for past 3 weeks', 
+        'Patient presents with signs of elevated glycemia and poorly controlled blood pressure. Family history positive for cardiovascular disease. Initiated dual medical therapy with Metformin and Lisinopril. Counseling provided on dietary sodium restriction.', 'COMPLETED');
+
+-- Visit 2: Harold Finch at Sunrise Medical Centre (SMC) with Dr. Priya Patel
+INSERT INTO VISIT (VISIT_ID, PATIENT_ID, DOCTOR_ID, HOSPITAL_ID, VISIT_DATE, VISIT_TYPE, CHIEF_COMPLAINT, CLINICAL_NOTES, STATUS)
+VALUES (2, 1, 3, 2, TO_TIMESTAMP('2026-02-20 11:15:00', 'YYYY-MM-DD HH24:MI:SS'), 'FOLLOW_UP', 
+        'Follow-up glycemic review and blood pressure assessment following CGH consultation', 
+        'Patient reports improved energy. Tolerance to Metformin 500mg BID is satisfactory with no GI distress. Home blood pressure readings averaging 134/84. Reviewed CGH laboratory findings. Recommended continuing current pharmacotherapy.', 'COMPLETED');
+
+-- Visit 3: Elena Rostova at Green Valley Hospital (GVH) with Dr. Mateo Rodriguez
+INSERT INTO VISIT (VISIT_ID, PATIENT_ID, DOCTOR_ID, HOSPITAL_ID, VISIT_DATE, VISIT_TYPE, CHIEF_COMPLAINT, CLINICAL_NOTES, STATUS)
+VALUES (3, 2, 4, 3, TO_TIMESTAMP('2026-02-05 14:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'CONSULTATION', 
+        'Nocturnal cough and mild exertional dyspnea following seasonal viral infection', 
+        'Bilateral expiratory wheezing noted on auscultation. Peak expiratory flow rate mildly reduced. History of NSAID hypersensitivity confirmed. Prescribed maintenance inhaler therapy.', 'COMPLETED');
+
+-- 9. VISIT_DIAGNOSIS (Junction)
+INSERT INTO VISIT_DIAGNOSIS (VISIT_ID, DIAGNOSIS_ID, DIAGNOSIS_TYPE, CLINICAL_STATUS, NOTES, RECORDED_AT)
+VALUES (1, 1, 'PRIMARY', 'CHRONIC', 'Newly documented Type 2 Diabetes', TO_TIMESTAMP('2026-01-10 10:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VISIT_DIAGNOSIS (VISIT_ID, DIAGNOSIS_ID, DIAGNOSIS_TYPE, CLINICAL_STATUS, NOTES, RECORDED_AT)
+VALUES (1, 2, 'SECONDARY', 'CHRONIC', 'Stage 1 Essential Hypertension', TO_TIMESTAMP('2026-01-10 10:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VISIT_DIAGNOSIS (VISIT_ID, DIAGNOSIS_ID, DIAGNOSIS_TYPE, CLINICAL_STATUS, NOTES, RECORDED_AT)
+VALUES (2, 1, 'PRIMARY', 'ACTIVE', 'Glycemic monitoring during follow-up', TO_TIMESTAMP('2026-02-20 11:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VISIT_DIAGNOSIS (VISIT_ID, DIAGNOSIS_ID, DIAGNOSIS_TYPE, CLINICAL_STATUS, NOTES, RECORDED_AT)
+VALUES (3, 3, 'PRIMARY', 'ACTIVE', 'Exacerbation of mild persistent asthma', TO_TIMESTAMP('2026-02-05 14:30:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+-- 10. VITALS RECORDS (Historical trend points for charts)
+-- Harold Finch - Visit 1 (CGH)
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (1, 1, 1, 2, 'SYSTOLIC_BP', 152.00, 'mmHg', 'Resting sitting', TO_TIMESTAMP('2026-01-10 09:35:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (2, 1, 1, 2, 'DIASTOLIC_BP', 94.00, 'mmHg', 'Resting sitting', TO_TIMESTAMP('2026-01-10 09:35:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (3, 1, 1, 2, 'BLOOD_GLUCOSE', 178.00, 'mg/dL', 'Fasting (10h)', TO_TIMESTAMP('2026-01-10 09:40:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (4, 1, 1, 2, 'HEART_RATE', 82.00, 'bpm', 'Regular sinus rhythm', TO_TIMESTAMP('2026-01-10 09:35:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (5, 1, 1, 2, 'BODY_TEMPERATURE', 36.80, 'C', 'Oral digital', TO_TIMESTAMP('2026-01-10 09:35:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (6, 1, 1, 2, 'OXYGEN_SATURATION', 98.00, '%', 'Room air', TO_TIMESTAMP('2026-01-10 09:35:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+-- Harold Finch - Intermediate checkup
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (7, 1, NULL, 2, 'SYSTOLIC_BP', 144.00, 'mmHg', 'Routine clinic check', TO_TIMESTAMP('2026-01-28 11:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (8, 1, NULL, 2, 'DIASTOLIC_BP', 90.00, 'mmHg', 'Routine clinic check', TO_TIMESTAMP('2026-01-28 11:00:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (9, 1, NULL, 2, 'BLOOD_GLUCOSE', 155.00, 'mg/dL', 'Post-prandial (2h)', TO_TIMESTAMP('2026-01-28 11:05:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+-- Harold Finch - Visit 2 (SMC)
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (10, 1, 2, 3, 'SYSTOLIC_BP', 134.00, 'mmHg', 'Resting sitting', TO_TIMESTAMP('2026-02-20 11:20:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (11, 1, 2, 3, 'DIASTOLIC_BP', 84.00, 'mmHg', 'Resting sitting', TO_TIMESTAMP('2026-02-20 11:20:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (12, 1, 2, 3, 'BLOOD_GLUCOSE', 138.00, 'mg/dL', 'Fasting (8h)', TO_TIMESTAMP('2026-02-20 11:25:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VITAL_RECORD (VITAL_ID, PATIENT_ID, VISIT_ID, RECORDED_BY, MEASUREMENT_TYPE, NUMERIC_VALUE, UNIT, CONTEXT_NOTE, RECORDED_AT)
+VALUES (13, 1, 2, 3, 'HEART_RATE', 74.00, 'bpm', 'Regular sinus rhythm', TO_TIMESTAMP('2026-02-20 11:20:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+-- 11. PRESCRIPTIONS & PRESCRIPTION ITEMS
+-- Prescription 1: Issued at CGH by Dr. Marcus Chen for Harold Finch
+INSERT INTO PRESCRIPTION (PRESCRIPTION_ID, PATIENT_ID, VISIT_ID, DOCTOR_ID, HOSPITAL_ID, PRESCRIPTION_CODE, STATUS, CLINICAL_NOTES)
+VALUES (1, 1, 1, 2, 1, 'RX-2026-CGH-0001', 'ACTIVE', 'Initial antidiabetic and antihypertensive therapy. Monitored for renal tolerance.');
+
+-- Item 1: Metformin 500mg BID
+INSERT INTO PRESCRIPTION_ITEM (ITEM_ID, PRESCRIPTION_ID, MEDICINE_ID, DOSE_AMOUNT, DOSE_UNIT, FREQUENCY, ROUTE, DURATION_DAYS, INSTRUCTIONS, START_DATE, END_DATE, STATUS)
+VALUES (1, 1, 1, '500', 'mg', 'Twice daily with meals', 'ORAL', 90, 'Take with breakfast and evening dinner to reduce gastrointestinal irritation', TO_DATE('2026-01-10', 'YYYY-MM-DD'), TO_DATE('2026-04-10', 'YYYY-MM-DD'), 'ACTIVE');
+
+-- Item 2: Lisinopril 10mg QD
+INSERT INTO PRESCRIPTION_ITEM (ITEM_ID, PRESCRIPTION_ID, MEDICINE_ID, DOSE_AMOUNT, DOSE_UNIT, FREQUENCY, ROUTE, DURATION_DAYS, INSTRUCTIONS, START_DATE, END_DATE, STATUS)
+VALUES (2, 1, 2, '10', 'mg', 'Once daily in morning', 'ORAL', 90, 'Take each morning with water; report any persistent dry cough or dizziness', TO_DATE('2026-01-10', 'YYYY-MM-DD'), TO_DATE('2026-04-10', 'YYYY-MM-DD'), 'ACTIVE');
+
+-- Item 3: Atorvastatin 20mg QHS
+INSERT INTO PRESCRIPTION_ITEM (ITEM_ID, PRESCRIPTION_ID, MEDICINE_ID, DOSE_AMOUNT, DOSE_UNIT, FREQUENCY, ROUTE, DURATION_DAYS, INSTRUCTIONS, START_DATE, END_DATE, STATUS)
+VALUES (3, 1, 6, '20', 'mg', 'Once daily at bedtime', 'ORAL', 90, 'Primary ASCVD prevention for diabetic dyslipidemia', TO_DATE('2026-01-10', 'YYYY-MM-DD'), TO_DATE('2026-04-10', 'YYYY-MM-DD'), 'ACTIVE');
+
+-- 12. MEDICAL TESTS
+INSERT INTO MEDICAL_TEST (TEST_ID, PATIENT_ID, VISIT_ID, ORDERING_DOCTOR_ID, HOSPITAL_ID, TEST_NAME, TEST_CATEGORY, ORDER_DATE, COMPLETION_DATE, RESULT_SUMMARY, NUMERIC_RESULT, RESULT_UNIT, REFERENCE_RANGE, STATUS, REPORT_FILE_REF)
+VALUES (1, 1, 1, 2, 1, 'Hemoglobin A1c (HbA1c)', 'Endocrine / Laboratory', TO_TIMESTAMP('2026-01-10 10:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2026-01-11 14:00:00', 'YYYY-MM-DD HH24:MI:SS'), 
+        'Elevated glycated hemoglobin consistent with recent sub-optimal glycemic control.', 7.80, '%', '< 5.7 normal, 5.7-6.4 prediabetes, >=6.5 diabetes', 'COMPLETED', '/reports/cgh/lab/2026/hba1c_0001.pdf');
+
+INSERT INTO MEDICAL_TEST (TEST_ID, PATIENT_ID, VISIT_ID, ORDERING_DOCTOR_ID, HOSPITAL_ID, TEST_NAME, TEST_CATEGORY, ORDER_DATE, COMPLETION_DATE, RESULT_SUMMARY, NUMERIC_RESULT, RESULT_UNIT, REFERENCE_RANGE, STATUS, REPORT_FILE_REF)
+VALUES (2, 1, 1, 2, 1, 'Estimated GFR (eGFR)', 'Renal / Laboratory', TO_TIMESTAMP('2026-01-10 10:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2026-01-11 14:00:00', 'YYYY-MM-DD HH24:MI:SS'), 
+        'Preserved kidney filtration rate suitable for metformin therapy.', 88.00, 'mL/min/1.73m2', '> 60 normal', 'COMPLETED', '/reports/cgh/lab/2026/egfr_0001.pdf');
+
+INSERT INTO MEDICAL_TEST (TEST_ID, PATIENT_ID, VISIT_ID, ORDERING_DOCTOR_ID, HOSPITAL_ID, TEST_NAME, TEST_CATEGORY, ORDER_DATE, COMPLETION_DATE, RESULT_SUMMARY, NUMERIC_RESULT, RESULT_UNIT, REFERENCE_RANGE, STATUS, REPORT_FILE_REF)
+VALUES (3, 1, 2, 3, 2, 'Fasting Lipid Profile', 'Cardiovascular / Laboratory', TO_TIMESTAMP('2026-02-20 11:30:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2026-02-21 16:30:00', 'YYYY-MM-DD HH24:MI:SS'), 
+        'Total Cholesterol 185 mg/dL, LDL 102 mg/dL, HDL 46 mg/dL, Triglycerides 160 mg/dL.', 102.00, 'mg/dL LDL', '< 100 optimal', 'COMPLETED', '/reports/smc/lab/2026/lipids_0001.pdf');
+
+-- 13. TREATMENT PLANS
+INSERT INTO TREATMENT_PLAN (PLAN_ID, PATIENT_ID, VISIT_ID, DOCTOR_ID, TITLE, OBJECTIVE, INSTRUCTIONS, STATUS, START_DATE, REVIEW_DATE)
+VALUES (1, 1, 1, 2, 'Type 2 Diabetes & Hypertension Dual Management Protocol', 
+        'Target HbA1c < 7.0%, resting BP < 130/80 mmHg, prevent macro/microvascular sequelae.', 
+        '1. Adhere to low-sodium ( < 2g/day) Mediterranean-style dietary plan. 2. 150 minutes of moderate aerobic activity weekly. 3. Log self-monitored fasting blood glucose thrice weekly. 4. Return for follow-up in 6 to 8 weeks.', 
+        'ACTIVE', TO_DATE('2026-01-10', 'YYYY-MM-DD'), TO_DATE('2026-04-15', 'YYYY-MM-DD'));
+
+-- 14. EMERGENCY PROFILE (Pre-seeded for Harold Finch for immediate QR card demonstration)
+-- Token: 'demo-emergency-token-2026-finch'
+-- SHA256: 'e50fb52c131d97bbbe9f2b32a2f3e4ab2beaf50158c9fd25543b24b4a46ca369'
+INSERT INTO EMERGENCY_PROFILE (PROFILE_ID, PATIENT_ID, TOKEN_HASH, TOKEN_RAW_PREVIEW, IS_ACTIVE, ALLOW_BLOOD_GROUP, ALLOW_ALLERGIES, ALLOW_MEDICATIONS, ALLOW_CONTACTS, EXPIRES_AT)
+VALUES (1, 1, 'e50fb52c131d97bbbe9f2b32a2f3e4ab2beaf50158c9fd25543b24b4a46ca369', 'demo-em...finch', 1, 1, 1, 1, 1, SYSTIMESTAMP + INTERVAL '30' DAY);
+
+-- 15. AUDIT LOG (Demonstration historical audit records)
+INSERT INTO AUDIT_LOG (LOG_ID, ACTOR_USER_ID, ACTOR_ROLE, EVENT_TYPE, TARGET_ENTITY, TARGET_ID, HOSPITAL_ID, PATIENT_ID, DETAILS, ACCESS_REASON, IP_ADDRESS, CREATED_AT)
+VALUES (AUDIT_LOG_SEQ.NEXTVAL, 2, 'DOCTOR', 'PATIENT_RECORD_ACCESSED', 'PATIENT', '1', 1, 1, 'Routine clinic check by Dr. Marcus Chen', 'ROUTINE_CARE', '192.168.1.101', TO_TIMESTAMP('2026-01-10 09:25:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO AUDIT_LOG (LOG_ID, ACTOR_USER_ID, ACTOR_ROLE, EVENT_TYPE, TARGET_ENTITY, TARGET_ID, HOSPITAL_ID, PATIENT_ID, DETAILS, ACCESS_REASON, IP_ADDRESS, CREATED_AT)
+VALUES (AUDIT_LOG_SEQ.NEXTVAL, 3, 'DOCTOR', 'PATIENT_RECORD_ACCESSED', 'PATIENT', '1', 2, 1, 'Longitudinal medical history reviewed across CGH and SMC', 'ROUTINE_CARE', '192.168.2.204', TO_TIMESTAMP('2026-02-20 11:10:00', 'YYYY-MM-DD HH24:MI:SS'));
+
+-- Synchronize sequences with max values
+BEGIN
+  EXECUTE IMMEDIATE 'DROP SEQUENCE HOSPITAL_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE HOSPITAL_SEQ START WITH 10 INCREMENT BY 1 NOCACHE';
+  
+  EXECUTE IMMEDIATE 'DROP SEQUENCE APP_USER_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE APP_USER_SEQ START WITH 20 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE PATIENT_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE PATIENT_SEQ START WITH 10 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE VISIT_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE VISIT_SEQ START WITH 10 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE DIAGNOSIS_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE DIAGNOSIS_SEQ START WITH 20 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE VITAL_RECORD_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE VITAL_RECORD_SEQ START WITH 30 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE ALLERGY_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE ALLERGY_SEQ START WITH 10 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE MEDICINE_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE MEDICINE_SEQ START WITH 20 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE PRESCRIPTION_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE PRESCRIPTION_SEQ START WITH 10 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE PRESCRIPTION_ITEM_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE PRESCRIPTION_ITEM_SEQ START WITH 20 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE DRUG_INTERACTION_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE DRUG_INTERACTION_SEQ START WITH 20 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE MEDICAL_TEST_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE MEDICAL_TEST_SEQ START WITH 10 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE TREATMENT_PLAN_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE TREATMENT_PLAN_SEQ START WITH 10 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE EMERGENCY_PROFILE_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE EMERGENCY_PROFILE_SEQ START WITH 10 INCREMENT BY 1 NOCACHE';
+
+  EXECUTE IMMEDIATE 'DROP SEQUENCE AUDIT_LOG_SEQ';
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE AUDIT_LOG_SEQ START WITH 10 INCREMENT BY 1 NOCACHE';
+END;
+/
+
+COMMIT;
