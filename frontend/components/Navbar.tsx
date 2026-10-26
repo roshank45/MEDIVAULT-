@@ -41,8 +41,13 @@ export default function Navbar() {
     router.push("/login");
   };
 
-  // Hide Navbar on public emergency QR view and login page
-  if (pathname.startsWith("/emergency/qr/") || pathname === "/login") {
+  // Hide Navbar on public emergency QR view, login page, and signup pages
+  if (
+    pathname.startsWith("/emergency/qr/") ||
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/admin/signup"
+  ) {
     return null;
   }
 
@@ -180,13 +185,22 @@ export default function Navbar() {
                 </div>
               </>
             ) : (
-              <Link
-                href="/login"
-                className="flex items-center gap-1.5 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
-              >
-                <User className="h-4 w-4" />
-                Sign In
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className="flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  <User className="h-3.5 w-3.5" />
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="flex items-center gap-1.5 rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-700"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Doctor Sign Up
+                </Link>
+              </div>
             )}
           </div>
         </div>

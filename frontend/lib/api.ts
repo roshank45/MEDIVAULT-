@@ -47,6 +47,17 @@ export const api = {
       }),
     me: () => apiRequest<any>("/auth/me"),
     logout: () => apiRequest<any>("/auth/logout", { method: "POST" }),
+    getPublicHospitals: () => apiRequest<any[]>("/auth/hospitals"),
+    doctorSignup: (data: any) =>
+      apiRequest<any>("/auth/doctor-signup", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    adminSignup: (data: any) =>
+      apiRequest<any>("/auth/admin-signup", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
   },
   patients: {
     register: (data: any) =>

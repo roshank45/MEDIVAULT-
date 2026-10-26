@@ -18,15 +18,34 @@ def register_patient(
     Atomically registers a new patient in Oracle DB.
     Generates a unique patient identifier (e.g. MV-2026-000004) backed by PATIENT_SEQ.
     """
-    # Check for potential duplicates by phone and DOB
-    existing = query_one(
-        "SELECT patient_id, unique_patient_id FROM PATIENT WHERE phone = ? AND date_of_birth = TO_DATE(?, 'YYYY-MM-DD')",
-        (patient_in.phone.strip(), patient_in.date_of_birth)
+    # Comprehensive duplicate validation: prevent duplicate Name+DOB and duplicate Phone
+    first = patient_in.first_name.strip()
+    last = patient_in.last_name.strip()
+    phone = patient_in.phone.strip()
+    dob = patient_in.date_of_birth
+
+    # 1. Prevent duplicate patient with same First Name, Last Name, and Date of Birth
+    existing_name_dob = query_one(
+        "SELECT patient_id, unique_patient_id, first_name, last_name FROM PATIENT WHERE "
+        "LOWER(TRIM(first_name)) = LOWER(?) AND LOWER(TRIM(last_name)) = LOWER(?) "
+        "AND date_of_birth = TO_DATE(?, 'YYYY-MM-DD')",
+        (first, last, dob)
     )
-    if existing:
+    if existing_name_dob:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"A patient with this phone number and date of birth is already registered with ID {existing['unique_patient_id']}."
+            detail=f"Duplicate patient detected: '{first} {last}' (DOB: {dob}) is already registered with ID {existing_name_dob['unique_patient_id']}."
+        )
+
+    # 2. Prevent duplicate patient with same Phone Number
+    existing_phone = query_one(
+        "SELECT patient_id, unique_patient_id, first_name, last_name FROM PATIENT WHERE phone = ?",
+        (phone,)
+    )
+    if existing_phone:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Duplicate phone detected: Phone {phone} is already registered under patient {existing_phone['unique_patient_id']} ({existing_phone['first_name']} {existing_phone['last_name']})."
         )
 
     # Fetch next sequence value

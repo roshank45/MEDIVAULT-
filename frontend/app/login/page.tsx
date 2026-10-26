@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { HeartPulse, Lock, User, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { HeartPulse, Lock, User, CheckCircle2, AlertCircle, ArrowRight, UserPlus, Stethoscope, Shield } from "lucide-react";
 import { api } from "@/lib/api";
 
 const DEMO_ACCOUNTS = [
@@ -154,6 +155,23 @@ export default function LoginPage() {
                 </>
               )}
             </button>
+
+            <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-center">
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50/50 px-2.5 py-2 text-xs font-semibold text-teal-800 transition hover:bg-teal-100/60 justify-center"
+              >
+                <Stethoscope className="h-3.5 w-3.5 text-teal-600" />
+                <span>Doctor Sign Up</span>
+              </Link>
+              <Link
+                href="/admin/signup"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50/50 px-2.5 py-2 text-xs font-semibold text-purple-800 transition hover:bg-purple-100/60 justify-center"
+              >
+                <Shield className="h-3.5 w-3.5 text-purple-600" />
+                <span>Administrator Sign Up</span>
+              </Link>
+            </div>
           </form>
 
           {/* Quick Demo Selector */}

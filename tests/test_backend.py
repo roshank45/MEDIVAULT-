@@ -69,15 +69,16 @@ def test_unauthorized_access_without_token():
 
 def test_patient_registration_generates_unique_id(doctor_cgh_token):
     import time
-    unique_phone = f"+1-555-{int(time.time()) % 100000:05d}"
+    ts = int(time.time() * 1000) % 1000000
+    unique_phone = f"+1-555-{ts:06d}"
     payload = {
-        "first_name": "TestAuto",
-        "last_name": "Patient",
-        "date_of_birth": "1990-05-15",
+        "first_name": f"Test{ts}",
+        "last_name": "Ephemeral",
+        "date_of_birth": "1992-06-20",
         "gender": "FEMALE",
         "blood_group": "AB_POSITIVE",
         "phone": unique_phone,
-        "email": "test.auto@example.com",
+        "email": f"test.{ts}@example.com",
         "address": "404 Silicon Way",
         "emergency_contact_name": "Alex Patient",
         "emergency_contact_phone": "+1-555-9000",
@@ -87,9 +88,30 @@ def test_patient_registration_generates_unique_id(doctor_cgh_token):
     res = client.post("/api/patients", json=payload, headers={"Authorization": f"Bearer {doctor_cgh_token}"})
     assert res.status_code == 201
     data = res.json()
-    assert "unique_patient_id" in data
-    assert data["unique_patient_id"].startswith("MV-2026-")
-    assert data["first_name"] == "TestAuto"
+    try:
+        assert "unique_patient_id" in data
+        assert data["unique_patient_id"].startswith("MV-2026-")
+        assert data["first_name"] == f"Test{ts}"
+    finally:
+        # Clean up temporary test patient immediately to maintain clean, duplicate-free database
+        if "patient_id" in data:
+            from app.core.database import execute_cmd
+            execute_cmd("DELETE FROM PATIENT WHERE patient_id = ?", (data["patient_id"],))
+
+def test_duplicate_patient_registration_rejected(doctor_cgh_token):
+    # Attempting to register Harold Finch again should be rejected with 409 Conflict
+    duplicate_payload = {
+        "first_name": "Harold",
+        "last_name": "Finch",
+        "date_of_birth": "1958-03-12",
+        "gender": "MALE",
+        "blood_group": "O_POSITIVE",
+        "phone": "+1-555-9999",  # Different phone, but same full name and date of birth
+        "allergies_recorded_status": "DOCUMENTED"
+    }
+    res = client.post("/api/patients", json=duplicate_payload, headers={"Authorization": f"Bearer {doctor_cgh_token}"})
+    assert res.status_code == 409
+    assert "Duplicate patient detected" in res.json()["detail"]
 
 def test_patient_search_by_id_and_name(doctor_cgh_token):
     res = client.get("/api/patients/search?q=Harold", headers={"Authorization": f"Bearer {doctor_cgh_token}"})
@@ -240,3 +262,103 @@ def test_audit_log_captures_sensitive_events(admin_token):
     event_types = [l["event_type"] for l in logs]
     # Check that events like LOGIN, ACCESS, or BREAK_GLASS are captured
     assert any("LOGIN" in e or "VISIT" in e or "BREAK_GLASS" in e or "ACCESSED" in e for e in event_types)
+
+# ============================================================================
+# 8. DOCTOR SELF-REGISTRATION & PUBLIC DIRECTORY TESTS
+# ============================================================================
+
+def test_public_hospitals_endpoint():
+    """Verify unauthenticated visitors can fetch the list of active hospitals."""
+    res = client.get("/api/auth/hospitals")
+    assert res.status_code == 200
+    hospitals = res.json()
+    assert isinstance(hospitals, list)
+    assert len(hospitals) >= 3
+    names = [h["name"] for h in hospitals]
+    assert any("City General" in n for n in names)
+
+def test_doctor_self_signup_and_subsequent_login():
+    """Test doctor registration workflow, JWT issuance, and login with new credentials."""
+    import time
+    ts = int(time.time())
+    unique_username = f"dr.test_{ts}"
+    unique_email = f"test.doctor.{ts}@hospital.org"
+    unique_license = f"LIC-TEST-{ts}"
+
+    payload = {
+        "full_name": f"Dr. Test Clinician {ts}",
+        "username": unique_username,
+        "password": "SecureDoctor@2026",
+        "email": unique_email,
+        "phone": "+1-555-8822",
+        "hospital_id": 1,
+        "specialty": "Neurology",
+        "license_number": unique_license,
+        "role": "DOCTOR"
+    }
+
+    # 1. Register new doctor
+    res = client.post("/api/auth/doctor-signup", json=payload)
+    assert res.status_code == 201, f"Signup failed: {res.text}"
+    data = res.json()
+    assert "access_token" in data
+    assert data["username"] == unique_username
+    assert data["role"] == "DOCTOR"
+    assert data["hospital_name"] is not None
+
+    # 2. Verify new doctor can immediately log in via standard login endpoint
+    login_res = client.post("/api/auth/login", json={"username": unique_username, "password": "SecureDoctor@2026"})
+    assert login_res.status_code == 200
+    login_data = login_res.json()
+    assert login_data["username"] == unique_username
+    assert login_data["role"] == "DOCTOR"
+
+    # 3. Verify duplicate registration fails with 409 Conflict
+    dup_res = client.post("/api/auth/doctor-signup", json=payload)
+    assert dup_res.status_code == 409
+    assert "already taken" in dup_res.json()["detail"].lower() or "already exists" in dup_res.json()["detail"].lower()
+
+def test_admin_signup_with_valid_key_and_audit_access():
+    """Verify administrator self-registration with valid passkey and immediate admin access."""
+    import time
+    ts = int(time.time())
+    unique_admin = f"admin.test_{ts}"
+    unique_email = f"admin.test.{ts}@medivault.gov"
+
+    payload = {
+        "full_name": f"Admin Auditor {ts}",
+        "username": unique_admin,
+        "password": "SecureAdmin@2026",
+        "email": unique_email,
+        "phone": "+1-555-0909",
+        "department": "Clinical Quality & Audit Directorate",
+        "admin_secret_key": "MEDIVAULT_ADMIN_2026"
+    }
+
+    # 1. Register admin
+    res = client.post("/api/auth/admin-signup", json=payload)
+    assert res.status_code == 201, f"Admin signup failed: {res.text}"
+    data = res.json()
+    assert data["role"] == "ADMIN"
+    assert "access_token" in data
+    token = data["access_token"]
+
+    # 2. Verify newly registered admin can access admin-only audit trail
+    audit_res = client.get("/api/audit", headers={"Authorization": f"Bearer {token}"})
+    assert audit_res.status_code == 200
+    assert isinstance(audit_res.json(), list)
+
+def test_admin_signup_rejected_with_invalid_key():
+    """Verify administrator registration is rejected when master passkey is invalid."""
+    payload = {
+        "full_name": "Hacker Impersonator",
+        "username": "fake.admin",
+        "password": "Password@123",
+        "email": "fake.admin@badactor.net",
+        "admin_secret_key": "WRONG_SECRET_KEY"
+    }
+    res = client.post("/api/auth/admin-signup", json=payload)
+    assert res.status_code == 403
+    assert "Invalid Administrative Master Key" in res.json()["detail"]
+
+

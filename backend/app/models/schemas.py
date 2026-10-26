@@ -42,6 +42,27 @@ class UserOut(BaseModel):
     is_active: int
     hospital_name: Optional[str] = None
 
+class DoctorSignUpRequest(BaseModel):
+    username: str
+    password: str
+    full_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    hospital_id: int
+    specialty: str
+    license_number: str
+    role: Optional[str] = "DOCTOR"
+
+class AdminSignUpRequest(BaseModel):
+    username: str
+    password: str
+    full_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    hospital_id: Optional[int] = None
+    department: Optional[str] = "Health System Administration"
+    admin_secret_key: str
+
 # ============================================================================
 # Hospital Schemas
 # ============================================================================
